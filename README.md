@@ -1,4 +1,4 @@
-zig# ringbuffer.zig
+# ringbuffer.zig
 
 A dynamic [ring buffer](https://en.wikipedia.org/wiki/Circular_buffer) (AKA circular buffer, circular queue, or cyclic buffer) implemented in [Zig](https://ziglang.org/).
 
