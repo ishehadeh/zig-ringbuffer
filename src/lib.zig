@@ -366,6 +366,37 @@ test "RingBuffer: realloc with tail before head" {
     try std.testing.expectEqual(ring.popBack(), null);
 }
 
+test "RingBuffer: realloc with tail before head, after wrapping" {
+    var ring = try RingBuffer(u32).initCapacity(std.testing.allocator, 8);
+    defer ring.deinit();
+
+    // Wrap front around to the last index, push until it is at the first index again
+    try ring.pushFront(0);
+    try ring.pushFront(1);
+    try ring.pushFront(2);
+    try ring.pushFront(3);
+    try ring.pushFront(4);
+    try ring.pushFront(5);
+    try ring.pushFront(6);
+    try ring.pushFront(7);
+
+    // wrap the head to the last index
+    try std.testing.expectEqual(ring.popBack(), 0);
+
+    try std.testing.expectEqual(ring.len, 7);
+    try ring.ensureTotalCapacity(ring.capacity() + 1);
+    try std.testing.expectEqual(ring.len, 7);
+
+    try std.testing.expectEqual(ring.popBack(), 1);
+    try std.testing.expectEqual(ring.popBack(), 2);
+    try std.testing.expectEqual(ring.popBack(), 3);
+    try std.testing.expectEqual(ring.popBack(), 4);
+    try std.testing.expectEqual(ring.popBack(), 5);
+    try std.testing.expectEqual(ring.popBack(), 6);
+    try std.testing.expectEqual(ring.popBack(), 7);
+    try std.testing.expectEqual(ring.popBack(), null);
+}
+
 test "RingBuffer: realloc with tail after head, shorter head" {
     var ring = RingBuffer(u32).init(std.testing.allocator);
     defer ring.deinit();
