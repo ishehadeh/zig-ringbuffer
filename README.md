@@ -50,7 +50,7 @@ This buffer will hold *at least* 16 elements before needing to reallocate.
 
 ## Resetting
 
-The buffer can be reset, without freeing memory using `RingBuffer.clearRetainingCapacity()`.
+The buffer can be reset without freeing memory using `RingBuffer.clearRetainingCapacity()`.
 
 ## Freeing
 
