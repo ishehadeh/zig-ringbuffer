@@ -57,6 +57,11 @@ The buffer can be reset without freeing memory using `RingBuffer.clearRetainingC
 A `RingBuffer` can be cleared, and all memory cleaned up with `RingBuffer.deinit()`.
 Operations on a `RingBuffer` after calling `deinit()` are still valid. 
 
+## Length and Capacity
+
+Use `RingBuffer.len() usize` to get the number of items the buffer currently holds.\
+Use `RingBuffer.capacity() usize` to get the number of items the buffer can hold before reallocating.
+
 ## Pushing Elements
 
 Elements can be appended and prepended with the `RingBuffer.pushFront(T) !void` and `RingBuffer.pushBack(T) !void` functions.
