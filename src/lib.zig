@@ -11,9 +11,9 @@ pub fn RingBuffer(comptime T: type) type {
             index: usize,
 
             pub fn next(self: *Iterator) ?*T {
-                if (self.index >= self.target.len) return null;
+                if (self.index >= self.target.len()) return null;
 
-                const real_index = if (self.direction == .forward) self.index else self.target.len - 1 - self.index;
+                const real_index = if (self.direction == .forward) self.index else self.target.len() - 1 - self.index;
                 if (self.target.get(real_index)) |item| {
                     self.index += 1;
                     return item;
@@ -29,7 +29,7 @@ pub fn RingBuffer(comptime T: type) type {
 
         head: usize = 0,
         tail: usize = 0,
-        len: usize = 0,
+        _len: usize = 0,
         
         /// Initialize a new buffer, no allocations are made until a `push*` method is called
         pub fn init(allocator: Allocator) Self {
@@ -48,9 +48,14 @@ pub fn RingBuffer(comptime T: type) type {
             return self.buffer.len;
         }
 
+        /// Get the numbers of items the buffer currently holds
+        pub fn len(self: *const Self) usize {
+            return self._len;
+        }
+
         /// Reset without freeing memory
         pub fn clearRetainingCapacity(self: *Self) void {
-            self.len = 0;
+            self._len = 0;
             self.head = 0;
             self.tail = 0;
         }
@@ -120,50 +125,50 @@ pub fn RingBuffer(comptime T: type) type {
 
         /// Add an item at the end of the buffer
         pub fn pushBack(self: *Self, item: T) !void {
-            if (self.len == self.capacity()) try self.ensureUnusedCapacity(1);
+            if (self.len() == self.capacity()) try self.ensureUnusedCapacity(1);
 
             self.buffer[self.head] = item;
             self.head = (self.head + 1) % self.capacity();
-            self.len += 1;
+            self._len += 1;
         }
 
         /// Remove the last item in the buffer, or null if its empty
         pub fn popBack(self: *Self) ?T {
-            if (self.len == 0) return null;
+            if (self.len() == 0) return null;
             
             if (self.head == 0) self.head = self.capacity();
             self.head -= 1;
-            self.len -= 1;
+            self._len -= 1;
 
             return self.buffer[self.head];
         }
 
         /// Add an item at the start of the buffer
         pub fn pushFront(self: *Self, item: T) !void {
-            if (self.len == self.capacity()) try self.ensureUnusedCapacity(1);
+            if (self.len() == self.capacity()) try self.ensureUnusedCapacity(1);
 
             if (self.tail == 0) self.tail = self.capacity();
             self.tail -= 1;
-            self.len += 1;
+            self._len += 1;
 
             self.buffer[self.tail] = item;
         }
 
         /// Remove the first item in the buffer, or null if its empty
         pub fn popFront(self: *Self) ?T {
-            if (self.len == 0) return null;
+            if (self.len() == 0) return null;
             
             const data = self.buffer[self.tail];
 
             self.tail = (self.tail + 1) % self.capacity();
-            self.len -= 1;
+            self._len -= 1;
 
             return data;
         }
 
         /// Get an item by index from the buffer
         pub fn get(self: *Self, i: usize) ?*T {
-            if (i >= self.len) return null;
+            if (i >= self.len()) return null;
 
             return &self.buffer[(self.tail + i) % self.capacity()];
         }
@@ -195,27 +200,27 @@ test "RingBuffer: pushBack / popBack" {
         var ring = RingBuffer(u32).init(std.testing.allocator);
         defer ring.deinit();
 
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
         try ring.pushBack(1);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try ring.pushBack(2);
-        try std.testing.expectEqual(ring.len, 2);
+        try std.testing.expectEqual(ring.len(), 2);
         try ring.pushBack(3);
-        try std.testing.expectEqual(ring.len, 3);
+        try std.testing.expectEqual(ring.len(), 3);
         try ring.pushBack(4);
-        try std.testing.expectEqual(ring.len, 4);
+        try std.testing.expectEqual(ring.len(), 4);
 
         try std.testing.expectEqual(ring.popBack(), 4);
-        try std.testing.expectEqual(ring.len, 3);
+        try std.testing.expectEqual(ring.len(), 3);
 
         try std.testing.expectEqual(ring.popBack(), 3);
-        try std.testing.expectEqual(ring.len, 2);
+        try std.testing.expectEqual(ring.len(), 2);
 
         try std.testing.expectEqual(ring.popBack(), 2);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
 
         try std.testing.expectEqual(ring.popBack(), 1);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
 
         try std.testing.expectEqual(ring.popBack(), null);
     }
@@ -225,24 +230,24 @@ test "RingBuffer: pushBack / popBack" {
         defer ring.deinit();
 
         try ring.pushBack(1);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try ring.pushBack(2);
-        try std.testing.expectEqual(ring.len, 2);
+        try std.testing.expectEqual(ring.len(), 2);
         try std.testing.expectEqual(ring.popBack(), 2);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
 
         try std.testing.expectEqual(ring.popBack(), 1);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
 
         try ring.pushBack(3);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try std.testing.expectEqual(ring.popBack(), 3);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
 
         try ring.pushBack(4);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try std.testing.expectEqual(ring.popBack(), 4);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
     
         try std.testing.expectEqual(ring.popBack(), null);
         try std.testing.expectEqual(ring.popBack(), null);
@@ -256,27 +261,27 @@ test "RingBuffer: pushFront / popFront" {
         var ring = RingBuffer(u32).init(std.testing.allocator);
         defer ring.deinit();
 
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
         try ring.pushFront(1);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try ring.pushFront(2);
-        try std.testing.expectEqual(ring.len, 2);
+        try std.testing.expectEqual(ring.len(), 2);
         try ring.pushFront(3);
-        try std.testing.expectEqual(ring.len, 3);
+        try std.testing.expectEqual(ring.len(), 3);
         try ring.pushFront(4);
-        try std.testing.expectEqual(ring.len, 4);
+        try std.testing.expectEqual(ring.len(), 4);
 
         try std.testing.expectEqual(ring.popFront(), 4);
-        try std.testing.expectEqual(ring.len, 3);
+        try std.testing.expectEqual(ring.len(), 3);
 
         try std.testing.expectEqual(ring.popFront(), 3);
-        try std.testing.expectEqual(ring.len, 2);
+        try std.testing.expectEqual(ring.len(), 2);
 
         try std.testing.expectEqual(ring.popFront(), 2);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
 
         try std.testing.expectEqual(ring.popFront(), 1);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
 
         try std.testing.expectEqual(ring.popFront(), null);
     }
@@ -286,24 +291,24 @@ test "RingBuffer: pushFront / popFront" {
         defer ring.deinit();
 
         try ring.pushFront(1);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try ring.pushFront(2);
-        try std.testing.expectEqual(ring.len, 2);
+        try std.testing.expectEqual(ring.len(), 2);
         try std.testing.expectEqual(ring.popFront(), 2);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
 
         try std.testing.expectEqual(ring.popFront(), 1);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
 
         try ring.pushFront(3);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try std.testing.expectEqual(ring.popFront(), 3);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
 
         try ring.pushFront(4);
-        try std.testing.expectEqual(ring.len, 1);
+        try std.testing.expectEqual(ring.len(), 1);
         try std.testing.expectEqual(ring.popFront(), 4);
-        try std.testing.expectEqual(ring.len, 0);
+        try std.testing.expectEqual(ring.len(), 0);
     
         try std.testing.expectEqual(ring.popFront(), null);
         try std.testing.expectEqual(ring.popFront(), null);
@@ -325,7 +330,7 @@ test "RingBuffer: append to back and front" {
         try ring.pushFront(7);
         try ring.pushBack(8);
 
-        try std.testing.expectEqual(ring.len, 8);
+        try std.testing.expectEqual(ring.len(), 8);
 
         try std.testing.expectEqual(ring.popBack(), 8);
         try std.testing.expectEqual(ring.popFront(), 7);
@@ -352,7 +357,7 @@ test "RingBuffer: realloc with tail before head" {
     try ring.pushBack(8);
     try ring.pushBack(9);
 
-    try std.testing.expectEqual(ring.len, 9);
+    try std.testing.expectEqual(ring.len(), 9);
 
     try std.testing.expectEqual(ring.popBack(), 9);
     try std.testing.expectEqual(ring.popBack(), 8);
@@ -383,9 +388,9 @@ test "RingBuffer: realloc with tail before head, after wrapping" {
     // wrap the head to the last index
     try std.testing.expectEqual(ring.popBack(), 0);
 
-    try std.testing.expectEqual(ring.len, 7);
+    try std.testing.expectEqual(ring.len(), 7);
     try ring.ensureTotalCapacity(ring.capacity() + 1);
-    try std.testing.expectEqual(ring.len, 7);
+    try std.testing.expectEqual(ring.len(), 7);
 
     try std.testing.expectEqual(ring.popBack(), 1);
     try std.testing.expectEqual(ring.popBack(), 2);
@@ -411,7 +416,7 @@ test "RingBuffer: realloc with tail after head, shorter head" {
     try ring.pushFront(8);
     try ring.pushFront(9);
 
-    try std.testing.expectEqual(ring.len, 9);
+    try std.testing.expectEqual(ring.len(), 9);
 
     try std.testing.expectEqual(ring.popBack(), 1);
     try std.testing.expectEqual(ring.popBack(), 2);
@@ -439,7 +444,7 @@ test "RingBuffer: realloc with tail after head, shorter tail" {
     try ring.pushBack(8);
     try ring.pushBack(9);
 
-    try std.testing.expectEqual(ring.len, 9);
+    try std.testing.expectEqual(ring.len(), 9);
 
     try std.testing.expectEqual(ring.popBack(), 9);
     try std.testing.expectEqual(ring.popBack(), 8);
@@ -466,7 +471,7 @@ test "RingBuffer: get" {
     try ring.pushBack(7);
     try ring.pushBack(8);
 
-    try std.testing.expectEqual(ring.len, 8);
+    try std.testing.expectEqual(ring.len(), 8);
 
     try std.testing.expectEqual(ring.get(0).?.*, 1);
     try std.testing.expectEqual(ring.get(1).?.*, 2);
@@ -492,7 +497,7 @@ test "RingBuffer: get, wrapping" {
     try ring.pushBack(7);
     try ring.pushBack(8);
 
-    try std.testing.expectEqual(ring.len, 8);
+    try std.testing.expectEqual(ring.len(), 8);
 
     try std.testing.expectEqual(ring.get(0).?.*, 1);
     try std.testing.expectEqual(ring.get(1).?.*, 2);
