@@ -150,7 +150,7 @@ while (iter.next()) |_| {
 ```
 
 When popping and iterating from one end the iterator will be shifted up with each pop.
-```
+```zig
 try my_ring.pushBack(0);
 try my_ring.pushBack(1);
 try my_ring.pushBack(2);
